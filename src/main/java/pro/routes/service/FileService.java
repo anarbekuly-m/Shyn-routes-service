@@ -16,10 +16,8 @@ public class FileService {
     private final String bucketName = "shyn-images";
 
     public String uploadFile(MultipartFile file) throws Exception {
-        // 1. Генерируем уникальное имя файла, чтобы не перезаписать старые фото
         String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
 
-        // 2. Загружаем файл в бакет
         minioClient.putObject(
                 PutObjectArgs.builder()
                         .bucket(bucketName)
@@ -29,8 +27,7 @@ public class FileService {
                         .build()
         );
 
-        // 3. Возвращаем URL, по которому Flutter сможет открыть фото
-        // В продакшене тут будет твой домен shyn-api.site
-        return "http://localhost:9000/" + bucketName + "/" + fileName;
+        // Возвращаем ТОЛЬКО имя файла, а не весь URL
+        return fileName;
     }
 }
