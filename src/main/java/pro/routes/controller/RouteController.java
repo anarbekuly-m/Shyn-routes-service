@@ -10,6 +10,7 @@ import pro.routes.service.RouteService;
 import java.util.List;
 
 @RestController
+@RequestMapping("/api/routes")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*") // Добавь это, чтобы Flutter (web/mobile) не ругался на CORS
 public class RouteController {
