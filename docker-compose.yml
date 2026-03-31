@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # Твой новый сервис маршрутов
+  routing-service:
+    build: .  # Dockerfile должен лежать в папке с проектом
+    container_name: shyn-routing-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db-routes:5432/shyn_routes_db
+      - MINIO_URL=http://minio:9000
+    depends_on:
+      - db-routes
+      - minio
+
+  # База данных
+  db-routes:
+    image: postgres:15
+    container_name: shyn-db-routes
+    environment:
+      POSTGRES_DB: shyn_routes_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+
+  # Хранилище
+  minio:
+    image: minio/minio
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password

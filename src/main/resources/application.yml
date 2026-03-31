@@ -1,1 +1,29 @@
-spring.application.name=shyn-routes-service
+server:
+  port: 8081
+
+spring:
+  datasource:
+    # ???? ?????????? ???, ??????? ???????? ????? ':'
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/shyn_db}
+    username: ${SPRING_DATASOURCE_USERNAME:user}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+# ????????? MinIO ???? ??????? ? ??????????
+minio:
+  url: ${MINIO_URL:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:admin}
+  secret-key: ${MINIO_SECRET_KEY:password}
+  bucket: ${MINIO_BUCKET:shyn-images}

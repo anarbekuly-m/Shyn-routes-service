@@ -1,3 +1,13 @@
+# Секреты и локальные конфиги
+.env
+docker-compose.yml
+docker-compose.override.yml
+
+# Локальные данные базы
+postgres_data/
+
+
+
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar

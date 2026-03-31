@@ -1,0 +1,46 @@
+name: Continuous Deployment (Routes Service)
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-push:
+    name: "Build and Push Image"
+    runs-on: ubuntu-latest # Собираем на мощностях GitHub, чтобы не грузить твой сервер
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+
+      - name: "Login to Docker Hub"
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: "Build and Push Docker Image"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # ВНИМАНИЕ: Здесь теперь routes-service
+          tags: ${{ secrets.DOCKER_USERNAME }}/shyn-routing-service:latest
+
+  deploy:
+    name: "Deploy to EC2"
+    needs: build-and-push
+    runs-on: self-hosted # Это твой раннер, который мы только что запустили в фоне
+    steps:
+      - name: "Pull and Restart Service"
+        run: |
+          cd ~/shyn
+          
+          # 1. Скачиваем только новый образ нашего сервиса маршрутов
+          sudo docker compose pull routing-service
+          
+          # 2. Перезапускаем только этот сервис (не трогая Auth и DB без нужды)
+          # --no-deps гарантирует, что мы не будем рестартить базу, если она жива
+          sudo docker compose up -d routing-service
+          
+          # 3. Чистим старые "висячие" образы, чтобы место на диске Ubuntu не кончилось
+          sudo docker image prune -f
