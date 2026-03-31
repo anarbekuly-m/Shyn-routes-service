@@ -1,9 +1,7 @@
-package pro.routes.routing.service;
+package pro.routes.service;
 
-import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
-import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;

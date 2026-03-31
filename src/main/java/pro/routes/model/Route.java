@@ -1,4 +1,4 @@
-package pro.routes.routing.model;
+package pro.routes.model;
 
 import jakarta.persistence.*;
 import lombok.*;

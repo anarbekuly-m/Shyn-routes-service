@@ -1,8 +1,8 @@
-package pro.routes.routing.repository;
+package pro.routes.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import pro.routes.routing.model.Route;
+import pro.routes.model.Route;
 
 @Repository
 public interface RouteRepository extends JpaRepository<Route, Long> {

@@ -1,11 +1,11 @@
-package pro.routes.routing.controller;
+package pro.routes.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import pro.routes.routing.model.Route;
-import pro.routes.routing.service.RouteService;
+import pro.routes.model.Route;
+import pro.routes.service.RouteService;
 
 import java.util.List;
 

@@ -1,10 +1,10 @@
-package pro.routes.routing.service;
+package pro.routes.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import pro.routes.routing.model.Route;
-import pro.routes.routing.repository.RouteRepository;
+import pro.routes.model.Route;
+import pro.routes.repository.RouteRepository;
 
 import java.util.List;
 

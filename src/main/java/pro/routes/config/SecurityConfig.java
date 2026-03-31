@@ -1,4 +1,4 @@
-package pro.routes.routing.config;
+package pro.routes.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
