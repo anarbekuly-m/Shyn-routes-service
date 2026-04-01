@@ -30,4 +30,20 @@ public class FileService {
         // Возвращаем ТОЛЬКО имя файла, а не весь URL
         return fileName;
     }
+
+    public void deleteFile(String imageUrl) {
+        try {
+            // Извлекаем имя файла из URL (все что после последнего слэша)
+            String fileName = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
+            minioClient.removeObject(
+                    io.minio.RemoveObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(fileName)
+                            .build()
+            );
+        } catch (Exception e) {
+            // Если файл не удалился, просто логируем, чтобы не ломать основной процесс
+            System.err.println("Ошибка при удалении файла из MinIO: " + e.getMessage());
+        }
+    }
 }

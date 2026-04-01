@@ -50,4 +50,26 @@ public class RouteController {
     public ResponseEntity<Route> getRouteById(@PathVariable Long id) {
         return ResponseEntity.ok(routeService.getRouteById(id));
     }
+
+    // 4. Обновить маршрут
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Route> updateRoute(
+            @PathVariable Long id,
+            @RequestPart("route")
+            @Parameter(schema = @Schema(implementation = Route.class)) String routeJson,
+            @RequestPart(value = "file", required = false) MultipartFile file
+    ) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.findAndRegisterModules();
+        Route routeDetails = objectMapper.readValue(routeJson, Route.class);
+
+        return ResponseEntity.ok(routeService.updateRoute(id, routeDetails, file));
+    }
+
+    // 5. Удалить маршрут
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteRoute(@PathVariable Long id) {
+        routeService.deleteRoute(id);
+        return ResponseEntity.noContent().build();
+    }
 }

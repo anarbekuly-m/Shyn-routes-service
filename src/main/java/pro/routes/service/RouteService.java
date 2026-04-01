@@ -42,4 +42,41 @@ public class RouteService {
         return routeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Маршрут с id " + id + " не найден"));
     }
+
+
+    // 4. Обновление маршрута
+    public Route updateRoute(Long id, Route routeDetails, MultipartFile file) throws Exception {
+        Route route = getRouteById(id); // Используем твой готовый метод поиска
+
+        // Обновляем поля
+        route.setName(routeDetails.getName());
+        route.setLocation(routeDetails.getLocation());
+        route.setDifficulty(routeDetails.getDifficulty());
+        route.setDistance(routeDetails.getDistance());
+        route.setCategory(routeDetails.getCategory());
+        route.setLatitude(routeDetails.getLatitude());
+        route.setLongitude(routeDetails.getLongitude());
+
+        // Если прислали новый файл - обновляем картинку
+        if (file != null && !file.isEmpty()) {
+            String fileName = fileService.uploadFile(file);
+            String publicImageUrl = minioPublicUrl + "/shyn-images/" + fileName;
+            route.setImageUrl(publicImageUrl);
+        }
+
+        return routeRepository.save(route);
+    }
+
+    // 5. Удаление маршрута
+    public void deleteRoute(Long id) {
+        Route route = getRouteById(id);
+
+        // Удаляем файл из MinIO перед удалением записи из БД
+        if (route.getImageUrl() != null) {
+            fileService.deleteFile(route.getImageUrl());
+        }
+
+        routeRepository.delete(route);
+    }
+
 }
