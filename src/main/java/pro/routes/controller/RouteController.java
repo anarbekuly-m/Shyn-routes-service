@@ -16,6 +16,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
+@RequestMapping("/api/routes") // Хорошая практика добавить базовый путь
 public class RouteController {
 
     private final RouteService routeService;
@@ -26,23 +27,22 @@ public class RouteController {
         return ResponseEntity.ok(routeService.getAllRoutes());
     }
 
-    // 2. Создать новый маршрут (Универсальный метод для Swagger и Postman)
+    // 2. Создать новый маршрут со стеком фото
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Route> createRoute(
             @RequestPart("route")
             @Parameter(schema = @Schema(implementation = Route.class))
             String routeJson,
 
-            @RequestPart("file")
-            MultipartFile file
+            @RequestPart("files") // Изменено на files
+            List<MultipartFile> files
     ) throws Exception {
-        // Ручная десериализация JSON строки в объект Route
         ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.findAndRegisterModules(); // Поддержка дат и спец. типов
+        objectMapper.findAndRegisterModules();
 
         Route route = objectMapper.readValue(routeJson, Route.class);
 
-        return ResponseEntity.ok(routeService.createRoute(route, file));
+        return ResponseEntity.ok(routeService.createRoute(route, files));
     }
 
     // 3. Получить по ID
@@ -51,19 +51,19 @@ public class RouteController {
         return ResponseEntity.ok(routeService.getRouteById(id));
     }
 
-    // 4. Обновить маршрут
+    // 4. Обновить маршрут (можно добавить новые фото в стек)
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Route> updateRoute(
             @PathVariable Long id,
             @RequestPart("route")
             @Parameter(schema = @Schema(implementation = Route.class)) String routeJson,
-            @RequestPart(value = "file", required = false) MultipartFile file
+            @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.findAndRegisterModules();
         Route routeDetails = objectMapper.readValue(routeJson, Route.class);
 
-        return ResponseEntity.ok(routeService.updateRoute(id, routeDetails, file));
+        return ResponseEntity.ok(routeService.updateRoute(id, routeDetails, files));
     }
 
     // 5. Удалить маршрут

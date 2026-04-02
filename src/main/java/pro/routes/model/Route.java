@@ -3,6 +3,9 @@ package pro.routes.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "routes")
 @Data
@@ -10,26 +13,24 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class Route {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
-    private String name;        // Например: "Пик Фурманова"
+    private String name;
+    private String location;
 
-    private String location;    // "Заилийский Алатау"
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
-    private String difficulty;  // "Medium"
+    private Double elevation;   // Высота
+    private String difficulty;  // Сложность
+    private String category;    // Категория
+    private Double latitude;
+    private Double longitude;
 
-    private Double distance;    // 14.5
-
-    private String category;    // "peak"
-
-    private Double latitude;    // 43.1533
-
-    private Double longitude;   // 77.0867
-
-    @Column(name = "image_url")
-    private String imageUrl;    // Ссылка на фото в MinIO
+    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<RouteImage> images = new ArrayList<>();
 }
