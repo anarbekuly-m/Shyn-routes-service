@@ -15,8 +15,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
-@RequestMapping("/api/routes") // Хорошая практика добавить базовый путь
+@CrossOrigin(origins = "*") // Хорошая практика добавить базовый путь
 public class RouteController {
 
     private final RouteService routeService;
