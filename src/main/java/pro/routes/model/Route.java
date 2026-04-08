@@ -34,7 +34,7 @@ public class Route implements Serializable {
     private Double latitude;
     private Double longitude;
 
-    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @Builder.Default
     private List<RouteImage> images = new ArrayList<>();
 }

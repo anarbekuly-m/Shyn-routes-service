@@ -27,25 +27,23 @@ public class RouteService {
     @Value("${MINIO_PUBLIC_URL:http://localhost:9000}")
     private String minioPublicUrl;
 
-    //Ключ будет "routes::all"
     @Cacheable(key = "'all'")
     public List<Route> getAllRoutes() {
         return routeRepository.findAll();
     }
 
-    //Ключ будет "routes::1", "routes::2" и т.д.
     @Cacheable(key = "#id")
     public Route getRouteById(Long id) {
-        Route route = routeRepository.findById(id)
+        // Теперь просто findById.
+        // Благодаря FetchType.EAGER в модели, Hibernate сам подтянет картинки за один присест.
+        return routeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Маршрут не найден"));
-        route.getImages().size(); // Просто вызываем метод, чтобы Hibernate загрузил данные
-        return route;
     }
 
     @Transactional
-    // Удаляем весь кэш списка, так как появился новый маршрут
     @CacheEvict(key = "'all'", allEntries = true)
     public Route createRoute(Route route, List<MultipartFile> files) throws Exception {
+        // Сначала сохраняем базу маршрута
         Route savedRoute = routeRepository.save(route);
 
         if (files != null && !files.isEmpty()) {
@@ -61,14 +59,15 @@ public class RouteService {
                 img.setRoute(savedRoute);
                 savedRoute.getImages().add(img);
             }
+            // Пересохраняем уже с картинками
+            return routeRepository.save(savedRoute);
         }
-        return routeRepository.save(savedRoute);
+        return savedRoute;
     }
 
     @Transactional
-    // Очищаем кэш списка и кэш конкретного обновляемого маршрута
     @Caching(evict = {
-            @CacheEvict(key = "'all'"),
+            @CacheEvict(key = "'all'", allEntries = true), // Рекомендую добавить allEntries для надежности списка
             @CacheEvict(key = "#id")
     })
     public Route updateRoute(Long id, Route routeDetails, List<MultipartFile> newFiles) throws Exception {
@@ -82,7 +81,6 @@ public class RouteService {
         route.setCategory(routeDetails.getCategory());
         route.setLatitude(routeDetails.getLatitude());
         route.setLongitude(routeDetails.getLongitude());
-        // Поле distance удалено отсюда
 
         if (newFiles != null && !newFiles.isEmpty()) {
             for (MultipartFile file : newFiles) {
@@ -101,9 +99,8 @@ public class RouteService {
     }
 
     @Transactional
-    // Очищаем кэш списка и кэш конкретного обновляемого маршрута
     @Caching(evict = {
-            @CacheEvict(key = "'all'"),
+            @CacheEvict(key = "'all'", allEntries = true),
             @CacheEvict(key = "#id")
     })
     public void deleteRoute(Long id) {
