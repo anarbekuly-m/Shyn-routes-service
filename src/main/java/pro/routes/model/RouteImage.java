@@ -24,6 +24,6 @@ public class RouteImage implements Serializable {
 
     @ManyToOne
     @JoinColumn(name = "route_id")
-    @com.fasterxml.jackson.annotation.JsonIgnore
-    private transient Route route; // Добавили transient для безопасной сериализации
+    @com.fasterxml.jackson.annotation.JsonIgnore // Чтобы не было зацикливания в JSON
+    private Route route;
 }
