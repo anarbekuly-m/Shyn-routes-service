@@ -1,38 +1,116 @@
 version: '3.8'
 
 services:
-  # Твой новый сервис маршрутов
-  routing-service:
-    build: .  # Dockerfile должен лежать в папке с проектом
-    container_name: shyn-routing-service
-    ports:
-      - "8081:8081"
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db-routes:5432/shyn_routes_db
-      - MINIO_URL=http://minio:9000
-    depends_on:
-      - db-routes
-      - minio
-
-  # База данных
-  db-routes:
+  # --- ОБЩАЯ БАЗА ДАННЫХ ---
+  postgres:
     image: postgres:15
-    container_name: shyn-db-routes
+    container_name: shyn_postgres
     environment:
-      POSTGRES_DB: shyn_routes_db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-    ports:
-      - "5433:5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - shyn_postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    networks:
+      - shyn_net
+    restart: always
 
-  # Хранилище
+  # --- НОВЫЙ СЕРВИС: REDIS ---
+  redis:
+    image: redis:7-alpine
+    container_name: shyn_redis
+    networks:
+      - shyn_net
+    restart: always
+
+  # --- СЕРВИС АВТОРИЗАЦИИ ---
+  auth-service:
+    image: anarbekulym/shyn-auth-service:latest
+    container_name: shyn_auth_service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shyn_auth_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID: ${GOOGLE_ID}
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET: ${GOOGLE_SECRET}
+      JWT_SECRET: ${JWT_SECRET}
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
+    depends_on:
+      - postgres
+    networks:
+      - shyn_net
+    restart: always
+
+  # --- СЕРВИС МАРШРУТОВ (С REDIS) ---
+  routing-service:
+    image: anarbekulym/shyn-routing-service:latest
+    container_name: shyn_routing_service
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/shyn_routes_db
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      # Настройки Redis
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_CACHE_TYPE=redis
+      # Настройки MinIO
+      - MINIO_PUBLIC_URL=https://shyn-api.site
+      - MINIO_URL=http://minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ADMIN}
+      - MINIO_SECRET_KEY=${MINIO_PASSWORD}
+      # Swagger & HTTPS
+      - SPRINGDOC_SWAGGER-UI_DISABLE-SWAGGER-DEFAULT-URL=true
+      - SPRINGDOC_SWAGGER-UI_CONFIG-URL=/api/routes/v3/api-docs/swagger-config
+      - SPRINGDOC_OPEN_API_SERVERS_0_URL=https://shyn-api.site/api/routes
+      - SPRINGDOC_SWAGGER-UI_URL=/api/routes/v3/api-docs
+      - SERVER_FORWARD-HEADERS-STRATEGY=framework
+    depends_on:
+      - postgres
+      - minio
+      - redis
+    networks:
+      - shyn_net
+    restart: always
+
+  # --- ХРАНИЛИЩЕ КАРТИНОК (MINIO) ---
   minio:
     image: minio/minio
-    container_name: minio
+    container_name: shyn_minio
     ports:
       - "9000:9000"
       - "9001:9001"
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: admin
-      MINIO_ROOT_PASSWORD: password
+      MINIO_ROOT_USER: ${MINIO_ADMIN}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+      MINIO_BROWSER_REDIRECT_URL: https://shyn-api.site/minio-admin/
+    volumes:
+      - shyn_minio_data:/data
+    networks:
+      - shyn_net
+    restart: always
+
+  # --- NGINX ---
+  nginx:
+    image: nginx:latest
+    container_name: shyn_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - auth-service
+      - routing-service
+    networks:
+      - shyn_net
+    restart: always
+
+networks:
+  shyn_net:
+    driver: bridge
+
+volumes:
+  shyn_postgres_data:
+  shyn_minio_data:

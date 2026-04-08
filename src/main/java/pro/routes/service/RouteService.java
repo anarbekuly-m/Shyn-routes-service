@@ -2,6 +2,10 @@ package pro.routes.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,6 +18,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@CacheConfig(cacheNames = "routes")
 public class RouteService {
 
     private final RouteRepository routeRepository;
@@ -22,16 +27,22 @@ public class RouteService {
     @Value("${MINIO_PUBLIC_URL:http://localhost:9000}")
     private String minioPublicUrl;
 
+    //Ключ будет "routes::all"
+    @Cacheable(key = "'all'")
     public List<Route> getAllRoutes() {
         return routeRepository.findAll();
     }
 
+    //Ключ будет "routes::1", "routes::2" и т.д.
+    @Cacheable(key = "#id")
     public Route getRouteById(Long id) {
         return routeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Маршрут не найден"));
     }
 
     @Transactional
+    // Удаляем весь кэш списка, так как появился новый маршрут
+    @CacheEvict(key = "'all'", allEntries = true)
     public Route createRoute(Route route, List<MultipartFile> files) throws Exception {
         Route savedRoute = routeRepository.save(route);
 
@@ -53,6 +64,11 @@ public class RouteService {
     }
 
     @Transactional
+    // Очищаем кэш списка и кэш конкретного обновляемого маршрута
+    @Caching(evict = {
+            @CacheEvict(key = "'all'"),
+            @CacheEvict(key = "#id")
+    })
     public Route updateRoute(Long id, Route routeDetails, List<MultipartFile> newFiles) throws Exception {
         Route route = getRouteById(id);
 
@@ -83,6 +99,11 @@ public class RouteService {
     }
 
     @Transactional
+    // Очищаем кэш списка и кэш конкретного обновляемого маршрута
+    @Caching(evict = {
+            @CacheEvict(key = "'all'"),
+            @CacheEvict(key = "#id")
+    })
     public void deleteRoute(Long id) {
         Route route = getRouteById(id);
         if (route.getImages() != null) {
