@@ -36,8 +36,10 @@ public class RouteService {
     //Ключ будет "routes::1", "routes::2" и т.д.
     @Cacheable(key = "#id")
     public Route getRouteById(Long id) {
-        return routeRepository.findById(id)
+        Route route = routeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Маршрут не найден"));
+        route.getImages().size(); // Просто вызываем метод, чтобы Hibernate загрузил данные
+        return route;
     }
 
     @Transactional
