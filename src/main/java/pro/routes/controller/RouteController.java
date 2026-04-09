@@ -33,37 +33,41 @@ public class RouteController {
             @Parameter(schema = @Schema(implementation = Route.class))
             String routeJson,
 
-            @RequestPart("files") // Изменено на files
-            List<MultipartFile> files
+            @RequestPart(value = "files", required = false)
+            List<MultipartFile> files,
+
+            @RequestPart(value = "gpx", required = false)
+            MultipartFile gpxFile // НОВОЕ ПОЛЕ
     ) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.findAndRegisterModules();
-
         Route route = objectMapper.readValue(routeJson, Route.class);
 
-        return ResponseEntity.ok(routeService.createRoute(route, files));
+        return ResponseEntity.ok(routeService.createRoute(route, files, gpxFile));
     }
 
-    // 3. Получить по ID
-    @GetMapping("/{id}")
-    public ResponseEntity<Route> getRouteById(@PathVariable Long id) {
-        return ResponseEntity.ok(routeService.getRouteById(id));
-    }
-
-    // 4. Обновить маршрут (можно добавить новые фото в стек)
+    // 3. Обновить маршрут (можно добавить новые фото в стек)
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Route> updateRoute(
             @PathVariable Long id,
             @RequestPart("route")
             @Parameter(schema = @Schema(implementation = Route.class)) String routeJson,
-            @RequestPart(value = "files", required = false) List<MultipartFile> files
+            @RequestPart(value = "files", required = false) List<MultipartFile> files,
+            @RequestPart(value = "gpx", required = false) MultipartFile gpxFile // НОВОЕ ПОЛЕ
     ) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.findAndRegisterModules();
         Route routeDetails = objectMapper.readValue(routeJson, Route.class);
 
-        return ResponseEntity.ok(routeService.updateRoute(id, routeDetails, files));
+        return ResponseEntity.ok(routeService.updateRoute(id, routeDetails, files, gpxFile));
     }
+
+    // 4. Получить по ID
+    @GetMapping("/{id}")
+    public ResponseEntity<Route> getRouteById(@PathVariable Long id) {
+        return ResponseEntity.ok(routeService.getRouteById(id));
+    }
+
 
     // 5. Удалить маршрут
     @DeleteMapping("/{id}")

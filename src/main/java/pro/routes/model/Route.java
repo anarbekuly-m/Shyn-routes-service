@@ -34,6 +34,8 @@ public class Route implements Serializable {
     private Double latitude;
     private Double longitude;
 
+    private String gpxUrl; // Ссылка на файл в MinIO
+
     @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @Builder.Default
     private List<RouteImage> images = new ArrayList<>();
