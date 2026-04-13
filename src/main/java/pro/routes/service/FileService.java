@@ -14,10 +14,13 @@ public class FileService {
     private final MinioClient minioClient;
     private final String bucketName = "shyn-images";
 
+    // Базовый URL твоего MinIO (замени на свой, если он другой)
+    private final String baseUrl = "https://shyn-api.site/shyn-images/";
+
     /**
-     * Теперь принимает fullPath, например: "route-15/uuid_photo.jpg"
+     * Загружает файл и возвращает полный публичный URL
      */
-    public void uploadFile(MultipartFile file, String fullPath) throws Exception {
+    public String uploadFile(MultipartFile file, String fullPath) throws Exception {
         minioClient.putObject(
                 PutObjectArgs.builder()
                         .bucket(bucketName)
@@ -26,6 +29,9 @@ public class FileService {
                         .contentType(file.getContentType())
                         .build()
         );
+
+        // Возвращаем путь, чтобы сохранить его в БД
+        return baseUrl + fullPath;
     }
 
     /**
@@ -35,6 +41,8 @@ public class FileService {
         try {
             // Если URL: http://.../shyn-images/route-15/file.jpg
             // Нам нужно вырезать "route-15/file.jpg"
+            if (imageUrl == null || !imageUrl.contains(bucketName)) return;
+
             String objectPath = imageUrl.substring(imageUrl.indexOf(bucketName) + bucketName.length() + 1);
 
             minioClient.removeObject(
