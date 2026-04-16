@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pro.routes.dto.CommentResponse;
+import pro.routes.dto.CreateTrackRequest;
 import pro.routes.dto.TrackFeedResponse;
 import pro.routes.dto.UserStatsResponse;
 import pro.routes.model.TrackComment;
@@ -34,15 +35,15 @@ public class UserTrackService {
     private final ObjectMapper objectMapper;
     private final FileService fileService;
 
-    // ===================== СОЗДАНИЕ ТРЕКА =====================
+    // ===================== СОЗДАНИЕ ТРЕКА (Вариант A: multipart — всё в одном) =====================
 
     @Caching(evict = {
             @CacheEvict(value = "userTracks", key = "#userId"),
             @CacheEvict(value = "trackFeed", allEntries = true)
     })
     @Transactional
-    public UserTrack saveTrack(String trackJson, MultipartFile gpxFile,
-                                List<MultipartFile> photos, Long userId, String username) throws Exception {
+    public TrackFeedResponse saveTrackMultipart(String trackJson, MultipartFile gpxFile,
+                                                List<MultipartFile> photos, Long userId, String username) throws Exception {
 
         UserTrack track = objectMapper.readValue(trackJson, UserTrack.class);
         track.setUserId(userId);
@@ -71,11 +72,48 @@ public class UserTrackService {
             }
         }
 
-        log.info("Saving track for user {} ({}): name='{}', activityType='{}', photos={}",
-                userId, username, saved.getName(), saved.getActivityType(),
-                photos != null ? photos.size() : 0);
+        log.info("Saved track (multipart) for user {} ({}): '{}'", userId, username, saved.getName());
+        UserTrack result = repository.save(saved);
+        return TrackFeedResponse.from(result, false);
+    }
 
-        return repository.save(saved);
+    // ===================== СОЗДАНИЕ ТРЕКА (Вариант B: JSON с готовыми URL) =====================
+
+    @Caching(evict = {
+            @CacheEvict(value = "userTracks", key = "#userId"),
+            @CacheEvict(value = "trackFeed", allEntries = true)
+    })
+    @Transactional
+    public TrackFeedResponse saveTrackFromJson(CreateTrackRequest request, Long userId, String username) {
+
+        UserTrack track = UserTrack.builder()
+                .userId(userId)
+                .username(username)
+                .name(request.getName())
+                .activityType(request.getActivityType())
+                .distanceKm(request.getDistanceKm())
+                .durationSec(request.getDurationSec())
+                .gpxUrl(request.getGpxUrl())
+                .likeCount(0)
+                .commentCount(0)
+                .build();
+
+        UserTrack saved = repository.save(track);
+
+        // Привязываем заранее загруженные фото
+        if (request.getImageUrls() != null && !request.getImageUrls().isEmpty()) {
+            for (String url : request.getImageUrls()) {
+                UserTrackImage image = UserTrackImage.builder()
+                        .imageUrl(url)
+                        .userTrack(saved)
+                        .build();
+                saved.getImages().add(image);
+            }
+            saved = repository.save(saved);
+        }
+
+        log.info("Saved track (JSON) for user {} ({}): '{}'", userId, username, saved.getName());
+        return TrackFeedResponse.from(saved, false);
     }
 
     // ===================== МОИ ТРЕКИ =====================

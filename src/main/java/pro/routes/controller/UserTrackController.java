@@ -7,11 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import pro.routes.dto.CommentRequest;
-import pro.routes.dto.CommentResponse;
-import pro.routes.dto.TrackFeedResponse;
-import pro.routes.dto.UserStatsResponse;
-import pro.routes.model.UserTrack;
+import pro.routes.dto.*;
 import pro.routes.service.UserTrackService;
 import pro.routes.service.JwtService;
 
@@ -27,10 +23,30 @@ public class UserTrackController {
     private final JwtService jwtService;
 
     // =====================================================
-    // 1. СОЗДАТЬ ТРЕК (с фото + GPX + activityType)
+    // 1a. СОЗДАТЬ ТРЕК — JSON (рекомендуемый для мобилки)
+    //     Фото и GPX загружаются ЗАРАНЕЕ через /upload/*
     // =====================================================
+    // POST /user-tracks
+    // Content-Type: application/json
+    // Body: { "name": "...", "activityType": "HIKING", "imageUrls": [...], "gpxUrl": "..." }
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<TrackFeedResponse> createTrackJson(
+            @RequestBody CreateTrackRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        Long userId = extractUserId(httpRequest);
+        String username = extractUsername(httpRequest);
+        return ResponseEntity.ok(userTrackService.saveTrackFromJson(request, userId, username));
+    }
+
+    // =====================================================
+    // 1b. СОЗДАТЬ ТРЕК — Multipart (всё в одном запросе)
+    //     Альтернативный вариант, если мобильщику удобнее
+    // =====================================================
+    // POST /user-tracks
+    // Content-Type: multipart/form-data
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<UserTrack> createTrack(
+    public ResponseEntity<TrackFeedResponse> createTrackMultipart(
             HttpServletRequest request,
             @RequestPart("track") String trackJson,
             @RequestPart(value = "file", required = false) MultipartFile gpxFile,
@@ -38,7 +54,7 @@ public class UserTrackController {
     ) throws Exception {
         Long userId = extractUserId(request);
         String username = extractUsername(request);
-        return ResponseEntity.ok(userTrackService.saveTrack(trackJson, gpxFile, photos, userId, username));
+        return ResponseEntity.ok(userTrackService.saveTrackMultipart(trackJson, gpxFile, photos, userId, username));
     }
 
     // =====================================================
@@ -143,7 +159,7 @@ public class UserTrackController {
     }
 
     // =====================================================
-    // УТИЛИТЫ: извлечение данных из JWT
+    // УТИЛИТЫ
     // =====================================================
     private String extractToken(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
