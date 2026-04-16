@@ -3,6 +3,8 @@ package pro.routes.dto;
 import lombok.*;
 import pro.routes.model.UserTrack;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -11,7 +13,10 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TrackFeedResponse {
+public class TrackFeedResponse implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     private Long id;
     private Long userId;
