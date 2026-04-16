@@ -155,20 +155,28 @@ public class UserTrackService {
         UserTrack track = repository.findById(trackId)
                 .orElseThrow(() -> new RuntimeException("Track not found"));
 
-        if (likeRepository.existsByUserIdAndUserTrackId(userId, trackId)) {
-            throw new RuntimeException("Already liked");
+        // 1. Ищем существующий лайк
+        Optional<TrackLike> existingLike = likeRepository.findByUserIdAndUserTrackId(userId, trackId);
+        boolean likedByMe;
+
+        if (existingLike.isPresent()) {
+            // 2. Если уже был лайк — убираем его (Unlike)
+            likeRepository.delete(existingLike.get());
+            track.setLikeCount(Math.max(0, track.getLikeCount() - 1));
+            likedByMe = false;
+        } else {
+            // 3. Если лайка не было — ставим (Like)
+            TrackLike like = TrackLike.builder()
+                    .userId(userId)
+                    .userTrack(track)
+                    .build();
+            likeRepository.save(like);
+            track.setLikeCount(track.getLikeCount() + 1);
+            likedByMe = true;
         }
 
-        TrackLike like = TrackLike.builder()
-                .userId(userId)
-                .userTrack(track)
-                .build();
-        likeRepository.save(like);
-
-        track.setLikeCount(track.getLikeCount() + 1);
         repository.save(track);
-
-        return TrackFeedResponse.from(track, true);
+        return TrackFeedResponse.from(track, likedByMe);
     }
 
     @Caching(evict = {
